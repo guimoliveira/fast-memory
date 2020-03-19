@@ -1,728 +1,1136 @@
-var canvas, ctx, state = 0, width, height, width1, height1, x, y, needRedraw = true;
-var button_start, button_records, button_about, buttons_themes = [], button_menu;
-var image_menu, image_theme, image_playing, image_card, image_cardOpen, image_records, image_gameover, image_cards = [];
-var sound_levelUp, sound_correct, sound_error, sound_cardFlip, sound_click, sound_clockTicking, sound_lostGame;
+new (function() {
 
-var level, levelInitialized = false, score, score1, canOpen = false, time, timeout, timeoutd, cardX, cardY, card1 = -1, card2 = -1, theme, points = 0;
+	var width, height, x, y;
+	var dimension;
 
-var lx, ly, ltime, ltime1;
+	var canvas, ctx;
+	var scene;
 
-var name;
+	var assets;
 
-var done = 0, total = 0;
+	var colors = {
+		background: "rgb(112, 146, 190)",
+		darkBackground: "rgb(73, 46, 184)",
+		foreground: "white",
+		darkForeground: "black",
+		loadingBar: "rgb(129, 150, 255)",
+		button1: "red",
+		button1Over: "#c80000",
+		button1Click: "darkred",
+		button2: "blue",
+		button2Over: "#0000c8",
+		button2Click: "darkblue",
+		button3: "rgb(255, 201, 14)",
+		button3Over: "rgb(226, 189, 0)",
+		button3Click: "rgb(206, 159, 0)"
+	};
 
-var levels = [
-	{x: 2, y: 2, time: 1, time1: 25},
-	{x: 3, y: 2, time: 1.5, time1: 30},
-	{x: 4, y: 2, time: 2, time1: 35},
-	{x: 5, y: 2, time: 2.5, time1: 40},
-	{x: 5, y: 2, time: 2.25, time1: 35},
-	{x: 4, y: 3, time: 2.75, time1: 45},
-	{x: 4, y: 3, time: 2.5, time1: 40},
-	{x: 4, y: 4, time: 3, time1: 55},
-	{x: 4, y: 4, time: 2.75, time1: 50},
-	{x: 5, y: 4, time: 3.5, time1: 60}];
+	var strings = {
+		font: "Arial",
+		play: "Jogar",
+		records: "Records",
+		back: "Voltar",
+		addRecord: "Adicionar aos records",
+		level: "LEVEL",
+		levelText: "Encontre todos os pares em ",
+		levelText1: " segundos.",
+		namePrompt: "Como você deseja ser conhecido?",
+		nameOrNickname: "Nome ou apelido",
+		loading: "Carregando...",
+		failed: "Algo deu errado. 😔",
+		more: "Mais classificações"
+	};
 
-var cards = [];
+	var themes = [
+		{name: "Todos",      begin: 0,   end: 112},
+		{name: "Transporte", begin: 0,   end: 15},
+		{name: "Frutas",     begin: 15,  end: 30},
+		{name: "Animais",    begin: 30,  end: 45},
+		{name: "Objetos",    begin: 45,  end: 60},
+		{name: "Comidas",    begin: 60,  end: 75},
+		{name: "Letras",     begin: 75,  end: 102},
+		{name: "Números",    begin: 102, end: 112}
+	];
 
-function verifyLoaded(i, type, loader){
+	var levels = new (function(){
 
-	if(type==0){
-		if(loader.filesObjects[i].complete==true){done+=loader.files[i].size; loader.loaded++; requestRedraw();}else{
-		setTimeout(function(){verifyLoaded(i, 0, loader)}, 300);}
-	}	
-	if(loader.loaded==loader.files.length){
-		state = 1; requestRedraw(); setTimeout(function(){sound_levelUp.play();}, 300);
-	}
-}
+		var settings = [{width: 2, height: 2, levelTime: 25, openTime: 1},
+						{width: 3, height: 2, levelTime: 30, openTime: 1.5},
+						{width: 4, height: 2, levelTime: 35, openTime: 2},
+						{width: 5, height: 2, levelTime: 40, openTime: 2.5},
+						{width: 5, height: 2, levelTime: 35, openTime: 2.25},
+						{width: 4, height: 3, levelTime: 45, openTime: 2.75},
+						{width: 4, height: 3, levelTime: 40, openTime: 2.5},
+						{width: 4, height: 4, levelTime: 55, openTime: 3},
+						{width: 4, height: 4, levelTime: 50, openTime: 2.75},
+						{width: 5, height: 4, levelTime: 60, openTime: 3.5}
+				       ];
 
-function loader(){
-	this.files = [];
-	this.filesObjects = [];
-	this.loaded = 0;
-	
-	this.load = function(){
-		for(var i=0; i<this.files.length; i++){
-				this.filesObjects[i].src = this.files[i].url;
-				verifyLoaded(i, this.files[i].type, this);
-		}
-	}
-	this.addFile = function(url, type, size){
-		var i = this.files.length;
-				
-		if(type==0){this.files.push({url: url, type: type, size: size}); this.filesObjects[i] = new Image(); total+=size;}
-		if(type==1){this.filesObjects[i] = new Audio(url);}
-		
-		return this.filesObjects[i];
-	}
-}
-
-function button(posX, posY, width, height, value, style){
-	this.x = posX;	this.y = posY;
-	this.width = width;	this.height = height;
-	this.value = value;	this.style = style;
-	this.mode = 0;
-		
-	this.draw = function(){
-		switch(this.style){
-			case 0:
-				if(this.mode==0){ctx.fillStyle = "red";}else{ctx.fillStyle = "rgb(159, 0, 0)";}
-				ctx.fillRect(_x(this.x)+x, _y(this.y)+y, _x(this.width), _y(this.height));
-				if(this.mode==0){ctx.fillStyle = "white";}else{ctx.fillStyle = "lightgray";}
-				break;
-			case 1:
-				if(this.mode==0){ctx.fillStyle = "blue";}else{ctx.fillStyle = "darkblue";}
-				ctx.fillRect(_x(this.x)+x, _y(this.y)+y, _x(this.width), _y(this.height));
-				if(this.mode==0){ctx.fillStyle = "white";}else{ctx.fillStyle = "lightgray";}
-				break;
-			case 2:
-				if(this.mode==0){ctx.fillStyle = "rgb(255, 201, 14)";}else{ctx.fillStyle = "rgb(206, 159, 0)";}
-				ctx.fillRect(_x(this.x)+x, _y(this.y)+y, _x(this.width), _y(this.height));
-				if(this.mode==0){ctx.fillStyle = "black";}else{ctx.fillStyle = "white";}			
-				break;
-		}
-		ctx.font = (_y(this.height)*0.6)+"px Arial";
-		ctx.textAlign = "center";
-		ctx.textBaseline = "middle";
-		ctx.fillText(this.value, _x(this.x)+x+_x(this.width)/2, _y(this.y)+y+_y(this.height)/2);
-
-	}
-	
-	this.onclick = function(){};
-	
-	this.verifyClick = function(posX, posY, type){
-		if(posX>_x(this.x)+x && posX<_x(this.x)+x+_x(this.width) && posY>_y(this.y)+y && posY<_y(this.y)+y+_y(this.height)){
-			if(type==0){this.mode = 1; this.draw();}
-			if(type==1 && this.mode==1){this.mode = 0; this.draw(); sound_click.play(); this.onclick();}
-		}else{
-			if(type==1 && this.mode==1){this.mode = 0; this.draw();}
-		}
-	}
-}
-
-var loader = new loader();
-
-window.onload = function(){
-	canvas = document.getElementById('game');
-	ctx = canvas.getContext('2d');
-	
-	if(ctx){
-		resize();
-		window.onresize = resize;
-		window.onmousedown = mousedown;
-		window.onmouseup = mouseup;
-		canvas.ontouchstart = touch;
-		canvas.ontouchend = touch;
-		canvas.ontouchcancel = touch;
-		canvas.ontouchleave = touch;
-		canvas.ontouchmove = touch;
-
-		window.oncontextmenu = function(){return false;}
-
-		button_start = new button(30, 40, 40, 16, 'Jogar', 0);
-		button_start.onclick = function(){state = 2; requestRedraw();}
-		
-		button_records = new button(30, 58, 40, 7, 'Records', 1);
-		button_records.onclick = function(){state = 3; requestRedraw();}
-		
-
-		var themesName = ['Todos', 'Transportes', 'Frutas', 'Animais', 'Objetos', 'Comidas', 'Letras', 'Números'];
-		var i = 0;
-		
-		for(var y = 0; y<4; y++){
-			for(var x = 0; x<2; x++){
-				buttons_themes[i] = new button(20+30*x, 44+6*y, 29, 5, themesName[i], 2);
-				buttons_themes[i].id = i;
-				
-				buttons_themes[i].onclick = function(){theme = this.id; score = 0; score1 = 0; level = 1; state = 5; initLevel();}
-				i++;
+		this.get = function(i) {
+			if (i < 10) return settings[i]; else {
+				return {width: 5, height: 4, 
+					   levelTime: Math.max(60 - 3 * (i - 9), 10), 
+					   openTime: Math.max(3.5 - 0.2 * (i - 9), 1)};
 			}
+		};
+
+	})();
+
+	function _(i) {
+		return Math.ceil(i / 100 * dimension);
+	}
+
+	function shuffleArray(array) {
+		for (var i = array.length - 1; i > 0; i--) {
+			var j = Math.floor(Math.random() * (i + 1));
+			var temp = array[i];
+			array[i] = array[j];
+			array[j] = temp;
 		}
-		
-		button_menu = new button(40.5, 77, 19, 7, 'Voltar', 1);
-		button_menu.onclick = function(){state = 1; requestRedraw();}
-		
-		image_menu = loader.addFile('images/FastMemoryMenu.png', 0, 39);
-		image_theme = loader.addFile('images/FastMemoryTheme.png', 0, 26.8);
-		image_playing = loader.addFile('images/FastMemoryPlaying.png', 0, 6.23);
-		image_records = loader.addFile('images/FastMemoryRecords.png', 0, 27.9);
-		image_gameover = loader.addFile('images/FastMemoryGameover.png', 0, 26.4);
-		image_card = loader.addFile('images/card.png', 0, 38.3);
-		image_cardOpen = loader.addFile('images/cardOpen.png', 0, 12.9);
-		
-		image_cards[0] = loader.addFile('images/cards15.png', 0, 377);
-		image_cards[1] = loader.addFile('images/cards27.png', 0, 76.5);
-		image_cards[2] = loader.addFile('images/cards10.png', 0, 38.5);
-		
-		sound_levelUp = loader.addFile('sounds/levelUp.mp3', 1, 12);
-		sound_correct = loader.addFile('sounds/correct.mp3', 1, 4.75);
-		sound_error = loader.addFile('sounds/error.mp3', 1, 3.1);
-		sound_cardFlip = loader.addFile('sounds/cardFlip.mp3', 1, 12.1);
-		sound_click = loader.addFile('sounds/click.mp3', 1, 2.58);
-		sound_clockTicking = loader.addFile('sounds/clockTicking.mp3', 1, 312);
-		sound_lostGame = loader.addFile('sounds/lostGame.mp3', 1, 17);
-			
-		loader.load();		
-			
 	}
-}
 
-function _x(x){
-	return Math.floor(x/100*width1);
-}
-
-function _y(y){
-	return Math.floor(y/100*height1);
-}
-
-function convertToMin(seg){
-	var min = Math.floor(seg/60000);
-	var seg1 = seg/1000-min*60;
-	
-	if(min<10){min = '0'+min;}
-	if(seg1<10){seg1 = '0'+seg1;}
-	
-	return min+':'+seg1;
-}
-
-function drawTimeScore(){
-	if(time>0){
-		
-		time-=1000;
-		score+=100;
-		
-		ctx.drawImage(image_playing, 50, 20, 10, 25, _x(60)+x, _y(4)+y, _x(30), _y(5));
-		ctx.drawImage(image_playing, 50, 20, 10, 25, _x(10)+x, _y(4)+y, _x(30), _y(5));
-		
-		ctx.font = _y(4)+"px Arial";
-		ctx.fillStyle = "white";
-		ctx.textBaseline = "middle";
-		
-		ctx.textAlign = "left";
-		ctx.fillText(Math.floor(score), _x(11)+x, _y(6.5)+y);
-		ctx.textAlign = "right";
-		ctx.fillText(convertToMin(time), _x(89)+x, _y(6.5)+y);		
-		
-	setTimeout(drawTimeScore, 30);}else{sound_clockTicking.pause();  if (!isNaN(sound_clockTicking.duration)){sound_clockTicking.currentTime = 0;}
-		setTimeout(function(){if(state==5){sound_levelUp.play(); level++; initLevel();}}, 1000);}	
-}
-
-function timeToScore(){
-	if(state==5){
-		clearTimeout(timeout);
-		score1 = score + time/10;
-		drawTimeScore();
+	function getRandomNumbers(amount, min, max) {
+		var array = [];
+		var result = [];
+		for (var i = min; i < max; i++) array.push(i);
+		for (var j = 0; j < amount; j++) {
+			result.push(array.splice(Math.floor(Math.random() * array.length), 1)[0]);
+		}
+		return result;
 	}
-}
 
-function drawTime(){
-	time-=1000;
-	
-	ctx.drawImage(image_playing, 50, 20, 10, 22, _x(64)+x, _y(4)+y, _x(25), _y(4.5));
-	
-	ctx.font = _y(4)+"px Arial";
-	ctx.fillStyle = "white";
-	ctx.textBaseline = "middle";
+	function getHex(num, padding) {
+		var hex = num.toString(16);
+		while (hex.length < padding) 
+			hex = "0" + hex;
+		return hex;
+	}
 
-	ctx.textAlign = "right";
-	ctx.fillText(convertToMin(time), _x(89)+x, _y(6.5)+y);	
-	
-	if(time==10000){sound_clockTicking.play();}
-		
-	if(time==0){
-		clearTimeout(timeout);
-		canOpen = false;
-		sound_lostGame.play();
-		
-		setTimeout(function(){
-			state = 6;
-						
-			for(var i = 0; i<=records.length; i++){
-				if(!records[i] || score>records[i][1]){
-					if(i<10){name = prompt("PARABÉNS! VOCÊ ENTROU PARA O RECORD!! \n\n - Qual é o seu nome?\n ", ""); state = 3;}
-					if(name=='null' || name==''){name=convidado;}
-					records.splice(i, 0, [name, score]);
-					
-					document.getElementById('name').value=name;
-					document.getElementById('score').value=score;
-					document.getElementById('add').submit();
-					
+	// Draw methods
+
+	function drawRect(_x, _y, width, height, style, fill, relative) {
+		if (relative) {
+			_x = x + _(_x); _y = y + _(_y); 
+			width = _(width); height = _(height);
+		}
+		if (fill) {
+			ctx.fillStyle = style;
+			ctx.fillRect(_x, _y, width, height);
+		} else {
+			ctx.strokeStyle = style;
+			ctx.strokeRect(_x, _y, width, height);
+		}
+	}
+
+	function drawText(text, _x, _y, size, maxWidth, style, font, align, baseline, color, fill, relative) {
+		if (relative) {
+			_x = x + _(_x); _y = y + _(_y); 
+			size = _(size);
+			if (maxWidth) maxWidth = _(maxWidth);
+		}
+		if (!maxWidth) maxWidth = undefined;
+		ctx.font = style + " " + size + "px " + font;
+		ctx.textAlign = align;
+		ctx.textBaseline = baseline;
+		if (fill) {
+			ctx.fillStyle = color;
+			ctx.fillText(text, _x, _y, maxWidth)
+		} else {
+			ctx.strokeStyle = color;
+			ctx.strokeText(text, _x, _y, maxWidth);
+		}
+	}
+
+	function drawLine(x1, y1, x2, y2, size, cap, join, style, relative) {
+		if (relative) {
+			x1 = x + _(x1); y1 = y + _(y1); 
+			x2 = x + _(x2); y2 = y + _(y2); 
+			size = _(size);
+		}
+		ctx.lineWidth = size;
+		ctx.lineCap = cap ? cap : "butt";
+		ctx.lineJoin = join ? joing : "miter";
+		ctx.strokeStyle = style;
+
+		ctx.beginPath();
+		ctx.moveTo(x1, y1);
+		ctx.lineTo(x2, y2);
+		ctx.stroke();
+	}
+
+	function drawImage(img, x1, y1, width1, height1, x2, y2, width2, height2, relative1, relative2) {
+		if (relative1) {
+			if (x1 !== null) x1 = x1 / 100 * img.width;
+			if (y1 !== null) y1 = y1 / 100 * img.height;
+			if (width1 !== null) width1 = width1 / 100 * img.width;
+			if (height1 !== null) height1 = height1 / 100 * img.height;
+		}
+		if (relative2) {
+			x2 = x + _(x2); y2 = y + _(y2);
+			if (width2 !== null) width2 = _(width2);
+			if (height2 !== null) height2 = _(height2);
+		}
+
+		if (x1 === null) x1 = 0;
+		if (y1 === null) y1 = 0;
+		if (width1 === null) width1 = img.width - x1;
+		if (height1 === null) height1 = img.height - y1;
+
+		if (width2 === null && height2 === null) {
+			width2 = width1;
+			height2 = height1;
+		} else if (width2 !== null && height2 === null) {
+			height2 = width2 / width1 * height1;
+		} else if (height2 !== null && width2 === null) {
+			width2 = height2 / height1 * width1;
+		}
+
+		ctx.drawImage(img, x1, y1, width1, height1, x2, y2, width2, height2);
+	}
+
+	// Elements
+
+	function Button(_x, _y, width, height, text, foreground, background, overBackground, clickBackground) {
+
+		var state = 0;
+
+		this.onClick = null;
+
+		this.setPosition = function(x, y) {
+			_x = x;
+			_y = y;
+		};
+
+		this.setDimension = function(_width, _height) {
+			width = _width;
+			height = _height;
+		};
+
+		this.setText = function(_text) {
+			text = _text;
+		};
+
+		this.setColors = function(_foreground, _background, _overBackground, _clickBackground) {
+			foreground = _foreground;
+			background = _background;
+			overBackground = _overBackground;
+			clickBackground = _clickBackground;
+		};
+
+		this.draw = function() {
+
+			var style = state == 0 ? background : (state == 1 ? overBackground : clickBackground);
+
+			drawRect(_x, _y, width, height, style, true, true);
+			drawText(text, _x + width / 2, _y + height / 2, height / 2, width, 
+				    "", strings.font, "center", "middle", foreground, true, true);
+		};
+
+		function isIn(__x, __y) {
+			var x1 = x + _(_x), y1 = y + _(_y), x2 = x1 + _(width), y2 = y1 + _(height);
+			return (__x >= x1 && __x <= x2 &&
+				    __y >= y1 && __y <= y2);
+		}
+
+		this.handleEvt = function(evt) {
+
+			var x = evt.clientX, y = evt.clientY;
+			var lastState = state;
+			var click = false;
+
+			switch (evt.type) {
+				case "mousedown":
+					if (isIn(x, y)) state = 2;
 					break;
+				case "mouseup":
+					if (state == 2 && isIn(x, y)) click = true;
+				case "mouseleave":
+					state = 0;
+					break;
+				case "mousemove":
+					if (state != 2) {
+						state = isIn(x, y);
+					} 
+					break;
+			}
+ 
+			if (lastState != state) this.draw();
+			if (click && this.onClick) {
+				assets.sounds.click.play();
+				this.onClick(this);
+			}
+
+		};
+
+	}
+
+	function Card(card, _x, _y, width, height) {
+
+		var self = this;
+
+		var state = 0;
+		var open = true;
+		var hidden = false;
+		var scaleX = 100, scaleY = 100;
+		var direction = 0;
+
+		this.onClick = null;
+		this.onFlip = null;
+		this.onHide = null;
+
+		this.isOpen = function() {
+			return open;
+		}
+
+		this.isHidden = function() {
+			return hidden;
+		}
+
+		this.getId = function() {
+			return card;
+		}
+
+		this.draw = function() {
+
+			var __x = _x + ((100 - scaleX) / 200) * width;
+			var _width = width * scaleX / 100;
+
+			var __y = _y + ((100 - scaleY) / 200) * height;
+			var _height = height * scaleY / 100;
+
+			drawRect(_x, _y, width, height, "rgb(230, 230, 230)", true, true);
+
+			if (hidden) return;
+
+			if (!open) {
+				drawImage(assets.images.closedCard, null, null, null, null, __x, __y, _width, _height, false, true);
+			} else {
+				drawImage(assets.images.openCard, null, null, null, null, __x, __y, _width, _height, false, true);
+
+				var image;
+				var dx, dy;
+
+				if (card < 75) {
+					image = assets.images.cards15;
+					dx = card % 15; dy = Math.floor(card / 15);
+				} else if (card < 102) {
+					image = assets.images.cards27;
+					dx = card - 75; dy = 0;
+				} else {
+					image = assets.images.cards10;
+					dx = card - 102; dy = 0;
 				}
+
+				drawImage(image, dx * 200, dy * 250, 200, 250, __x, __y, _width, _height, false, true);
+			}
+
+		};
+
+		function flipLoop() {
+			scaleX += direction;
+
+			if (scaleX <= 0) {
+				open = !open;
+				direction *= -1;
+				scaleX = 0;
+			}
+			if (scaleX >= 100) {
+				direction = 0;
+				scaleX = 100;
+			} else {
+				requestAnimationFrame(flipLoop);
+			}
+
+			self.draw();
+
+			if (scaleX == 100 && self.onFlip) self.onFlip(self);
+		}
+
+		this.flip = function() {
+			if (document.hasFocus()) {
+				direction = -20;
+				flipLoop();
+			} else {
+				open = !open;
+				this.draw();
+				if (this.onFlip) this.onFlip(this);
+			}
+		}
+
+		function hideLoop() {
+			scaleX -= 20;
+			scaleY -= 20;
+
+			if (scaleX <= 0) {
+				hidden = true;
+				scaleX = scaleY = 0;
+			} else {
+				requestAnimationFrame(hideLoop);
+			}
+
+			self.draw();
+
+			if (scaleX == 0 && self.onHide) self.onHide(self);
+		}
+
+		this.hide = function() {
+			hideLoop();
+		}
+
+		function isIn(__x, __y) {
+			var x1 = x + _(_x), y1 = y + _(_y), x2 = x1 + _(width), y2 = y1 + _(height);
+			return (__x >= x1 && __x <= x2 &&
+				    __y >= y1 && __y <= y2);
+		}
+
+		this.handleEvt = function(evt) {
+			var x = evt.clientX, y = evt.clientY;
+
+			switch (evt.type) {
+				case "mousedown":
+					if (isIn(x, y)) state = 1;
+					break;
+				case "mouseup":
+					if (state == 1 && this.onClick && isIn(x, y)) this.onClick(this);
+				case "mouseleave":
+					state = 0;
+					break;
+			}
+		};
+
+	}
+
+	function Circle(_x, _y, radius) {
+
+		this.setPosition = function(x, y) {
+			_x = x;
+			_y = y;
+		};
+
+		this.setRadius = function(_radius) {
+			radius = _radius;
+		};
+
+		this.draw = function() {
+			ctx.save();
+			
+			ctx.translate(x + _(_x), y + _(_y));
+
+			var _radius = _(radius);
+
+			for (var i = 0; i < 4; i++) {
+				ctx.translate(_radius * 2, 0);
+				ctx.rotate(Math.PI / 2);
+				ctx.drawImage(assets.images.circle, 0, 0, _radius, _radius)
+			}
+
+			ctx.restore();
+		};
+
+	}
+
+	function Square(_x, _y, width, height, radius) {
+
+		this.setPosition = function(x, y) {
+			_x = x;
+			_y = y;
+		};
+
+		this.setDimension = function(_width, _height) {
+			width = _width;
+			height = _height;
+		};
+
+		this.setRadius = function(_radius) {
+			radius = _radius;
+		};
+
+		this.draw = function() {
+			ctx.save();
+
+			ctx.translate(x + _(_x), y + _(_y));
+
+			var _width = _(width), _height = _(height), _radius = _(radius);
+
+			for (var i = 0; i < 4; i++) {
+				if (i == 0 || i == 2) {
+					ctx.drawImage(assets.images.square, 50, 0, 10, 50, _radius, 0, _width - 2 * _radius, _radius);
+					ctx.translate(_width, 0);
+				} else {
+					ctx.drawImage(assets.images.square, 50, 0, 10, 50, _radius, 0, _height - 2 * _radius, _radius);
+					ctx.translate(_height, 0);
+				}	
+
+				ctx.rotate(Math.PI / 2);
+				ctx.drawImage(assets.images.square, 0, 0, 50, 50, 0, 0, _radius, _radius);
+			}
+
+			ctx.drawImage(assets.images.square, 50, 50, 10, 10, _radius, _radius, _width - 2 * _radius, _height - 2 * _radius);
+
+			ctx.restore();
+
+		};
+
+	}
+
+	function Box(title, points, time, _x, _y, width, height) {
+
+		time = formatTime(time);
+
+		this.setPoints = function(_points) {
+			points = _points;
+			drawBar();
+		}
+
+		function formatTime(time) {
+			var min = Math.floor(time / 60);
+			var sec = time % 60;
+
+			if (min < 10) min = "0" + min;
+			if (sec < 10) sec = "0" + sec;
+
+			return min + ":" + sec;
+		}
+
+		this.setTime = function(_time) {
+			time = formatTime(_time);
+			drawBar();
+		}
+
+		this.setValues = function(_points, _time) {
+			points = _points;
+			time = formatTime(_time);
+			drawBar();
+		}
+
+		this.setPosition = function(x, y) {
+			_x = x;
+			_y = y;
+		};
+
+		this.setDimension = function(_width, _height) {
+			width = _width;
+			height = _height;
+		};
+
+		function drawBar() {
+			drawImage(assets.images.box, 0, 0, 80, 100, _x, _y, 10, 12.5, false, true);
+			drawImage(assets.images.box, 100, 0, 20, 100, _x + 10, _y, width - 20, 12.5, false, true);
+			drawImage(assets.images.box, 133, 0, 80, 100, _x + width - 10, _y, 10, 12.5, false, true);
+
+			drawText(title, _x + width / 2, _y + 5.5, 4, width / 2, "bold", strings.font, "center", "middle",  colors.foreground, true, true);
+			drawText(points, _x + 11, _y + 5.5, 4, width / 4, "", strings.font, "left", "middle",  colors.foreground, true, true);
+			drawText(time, _x + width - 11, _y + 5.5, 4, width / 4, "", strings.font, "right", "middle",  colors.foreground, true, true);
+		}
+
+		this.draw = function() {
+			drawBar();
+
+			drawImage(assets.images.box, 0, 100, 80, 20, _x, _y + 12.5, 10, height - 22.5, false, true);
+			drawImage(assets.images.box, 0, 97, 80, 80, _x, _y + height - 10, 10, 10, false, true);
+			drawImage(assets.images.box, 100, 97, 20, 80, _x + 10, _y + height - 10, width - 20, 10, false, true);
+			drawImage(assets.images.box, 133, 100, 80, 20, _x + width - 10, _y + 12.5, 10, height - 22.5, false, true);
+			drawImage(assets.images.box, 133, 97, 80, 80, _x + width - 10, _y + height - 10, 10, 10, false, true);
+			drawImage(assets.images.box, 60, 100, 90, 20, _x + 10, _y + 12.5, width - 20, height - 22.5, false, true);
+
+		};
+
+	}
+
+	// Scenes
+
+	function LoadingScene() {
+
+		var done = 0;
+
+		function drawBar() {
+			var text = done !== false ? (done * 100).toFixed(0) + "%" : strings.failed;
+
+			drawLine(30, 50, 70, 50, 3, "round", null, colors.darkBackground, true);
+			drawLine(30, 50, 30 + done * 40, 50, 3, "round", null, colors.loadingBar, true);
+			drawText(text, 50, 50, 2, 0, "", strings.font, "center", "middle", colors.foreground, true, true);
+		}
+
+		this.update = function(per) {
+			done = per;
+			drawBar();
+		};
+
+		this.draw = function() {
+			drawRect(0, 0, width, height, colors.background, true);
+			drawBar();
+		};
+
+		this.handleEvt = function(evt) {
+
+		};
+
+		this.draw();
+
+	}
+
+	function MenuScene() {
+
+		var circle = new Circle(0, 0, 50);
+		var square = new Square(27, 37, 46, 30, 5);
+		var playButton = new Button(30, 40, 40, 15, strings.play, colors.foreground, colors.button1, colors.button1Over, colors.button1Click);
+		var recordsButton = new Button(30, 56, 40, 8, strings.records, colors.foreground, colors.button2, colors.button2Over, colors.button2Click);
+
+		playButton.onClick = function() {
+			scene = new ThemeScene();
+		};
+
+		recordsButton.onClick = function() {
+			scene = new RecordsScene();
+		};
+
+		this.draw = function() {
+
+			drawRect(0, 0, width, height, colors.darkBackground, true);
+
+			circle.draw();
+			square.draw();
+			playButton.draw();
+			recordsButton.draw();
+
+			drawImage(assets.images.title, null, null, null, null, 10, 15, 75, null, false, true);
+			drawImage(assets.images.texts, 0, 0, 310, 60, 30, 70, 40, null, false, true);
+			drawImage(assets.images.texts, 310, 0, null, 60, 38, 76, 24, null, false, true);
+
+		};
+
+		this.handleEvt = function(evt) {
+			playButton.handleEvt(evt);
+			recordsButton.handleEvt(evt);
+		};
+
+		this.draw();
+
+	}
+
+	function ThemeScene() {
+
+		var circle = new Circle(0, 0, 50);
+		var square = new Square(19, 43, 63, 29, 5);
+		var backButton = new Button(40, 75, 20, 6, strings.back, colors.foreground, colors.button2, colors.button2Over, colors.button2Click);
+		var themesButton = [];
+
+		themes.forEach(function(t, i) {
+			themesButton[i] = new Button(22 + (i % 2) * 29, 46 + parseInt(i / 2) * 6, 28, 5, t.name, 
+								  colors.darkForeground, colors.button3, colors.button3Over, colors.button3Click);
+
+			themesButton[i].onClick = function() {
+				scene = new IntroScene(i);
 			}
 			
-			requestRedraw();},1000);}
+		});
+
+		backButton.onClick = function() {
+			scene = new MenuScene();
+		};
+
+		this.draw = function() {
+
+			drawRect(0, 0, width, height, colors.darkBackground, true);
+
+			circle.draw();
+			square.draw();
+			backButton.draw();
+
+			for (var i = 0; i < themesButton.length; i++) {
+				themesButton[i].draw();
+			}
 			
-	else{timeout = setTimeout(drawTime, 1000);}
-	
-}
+			drawImage(assets.images.title, null, null, null, null, 10, 15, 75, null, false, true);
+			drawImage(assets.images.texts, 0, 60, 310, 60, 31, 33, 38, null, false, true);
 
-function flipCard(posX, posY){
-	var id = posY*lx+posX;
-	
-	if(cards[id].state3==1){
-		sound_cardFlip.play();	
-		cards[id].state1*=-1;
-		canOpen = false;
-		drawCard(posX, posY);
+		};
+
+		this.handleEvt = function(evt) {
+			backButton.handleEvt(evt);
+
+			for (var i = 0; i < themesButton.length; i++) {
+				themesButton[i].handleEvt(evt);
+			}
+		};
+
+		this.draw();
+
 	}
-}
 
-function hideCard(posX, posY){
-	var id = posY*lx+posX;
+	function RecordsScene() {
 
-	cards[id].state3=0;
-	canOpen = false;
-	drawCard(posX, posY);
-}
+		var self = this;
 
-function drawScore(){
-	if((score1-score)>5 || (score1-score)<-5){score = score+(score1-score)/2;}else{score = score1;}
-	
-	ctx.drawImage(image_playing, 50, 20, 10, 22, _x(11)+x, _y(4)+y, _x(25), _y(4.5));
-	
-	ctx.font = _y(4)+"px Arial";
-	ctx.fillStyle = "white";
-	ctx.textBaseline = "middle";
+		var circle = new Circle(0, 0, 50);
+		var square = new Square(26, 23, 48, 52, 5);
+		var backButton = new Button(40, 78, 20, 6, strings.back, colors.foreground, colors.button2, colors.button2Over, colors.button2Click);
+		var moreButton = new Button(29, 67, 42, 5, strings.more, colors.darkForeground, colors.button3, colors.button3Over, colors.button3Click);
 
-	ctx.textAlign = "left";
-	ctx.fillText(Math.floor(score), _x(11)+x, _y(6.5)+y);
-	
-	if(score!=score1){setTimeout(drawScore, 25);}
-}
+		backButton.onClick = function() {
+			scene = new MenuScene();
+		};
 
-function drawCard(posX, posY){
-	
-	var id = posY*lx+posX;
-
-	if(cards[id].state!=cards[id].state1 || cards[id].state2!=cards[id].state3){
-		if(cards[id].state<cards[id].state1){cards[id].state+=0.1;if(cards[id].state>cards[id].state1){cards[id].state = cards[id].state1}}
-		if(cards[id].state>cards[id].state1){cards[id].state-=0.1;if(cards[id].state<cards[id].state1){cards[id].state = cards[id].state1}}		
-		
-		if(cards[id].state2>cards[id].state3){cards[id].state2-=0.1;}
-		if(cards[id].state2<0){cards[id] = 0;}
-		
-		ctx.fillStyle = "rgb(230, 230, 230)";
-		
-		var x1 = (100-16.25*lx)/2;
-		var y1 = (102-18.75*ly)/2;
-
-		ctx.fillRect(_x(x1+posX*16.25-0.625)+x, _y(y1+posY*20-0.625)+y, _x(16.25), _y(20));
-
-		if(cards[id].state<0){
-			ctx.drawImage(image_card, _x(x1+posX*16.25+7.5*(cards[id].state+1))+x, _y(y1+posY*20)+y, _x(-15*cards[id].state), _y(18.75));
-		}else{
-			if(cards[id].card<75){i = 0; cy = Math.floor(cards[id].card/15); cx = cards[id].card-cy*15;}
-			else if(cards[id].card<102){i = 1; cy = 0; cx = cards[id].card-75;}
-			else {i = 2; cy = 0; cx = cards[id].card-102;}
-					
-			ctx.drawImage(image_cardOpen, _x(x1+posX*16.25+7.5*(1-cards[id].state)+7.5*(1-cards[id].state2))+x, _y(y1+posY*20+9.375*(1-cards[id].state2))+y, _x(15*cards[id].state*cards[id].state2), _y(18.75*cards[id].state2));
-			ctx.drawImage(image_cards[i], 200*cx, 250*cy, 200, 250, _x(x1+posX*16.25+7.5*(1-cards[id].state)+7.5*(1-cards[id].state2))+x, _y(y1+posY*20+9.375*(1-cards[id].state2))+y, _x(15*cards[id].state*cards[id].state2), _y(18.75*cards[id].state2));
+		moreButton.onClick = function() {
+			window.open("records.php");
 		}
+
+		var records = null;
+		var failed = false;
+
+		server.getRecords(function(data){records = data; self.draw();}, function(){failed = true; self.draw();});
+
+		this.draw = function(forced) {
+
+			if (!forced && scene != this) return;
+
+			drawRect(0, 0, width, height, colors.darkBackground, true);
+
+			circle.draw();
+			square.draw();
+			backButton.draw();
+			moreButton.draw();
 		
-		timeoutd = setTimeout(function(){drawCard(posX, posY);}, 10);
-	}else{
-		if(!canOpen){
-			if(card1 != -1 && card2 != -1){
-				if(cards[card1].card == cards[card2].card){
-					setTimeout(function(){
-						var posY1 = Math.floor(card1/lx);
-						var posX1 = (card1/lx-posY1)*lx;
+			drawImage(assets.images.texts, 310, 60, null, 60, 38, 14, 24, null, false, true);
 
-						var posY2 = Math.floor(card2/lx);
-						var posX2 = (card2/lx-posY2)*lx;							
-						hideCard(posX1, posY1); hideCard(posX2, posY2);
-						sound_correct.play();
-						
-						score1 = score+1000; drawScore(); points++; if(points==(lx*ly)/2){setTimeout(timeToScore, 1000);}else{canOpen = true;}
-						
-						card1 = -1; card2 = -1;
-						
-					}, 200);}
-				else{
-					setTimeout(function(){
-						var posY1 = Math.floor(card1/lx);
-						var posX1 = (card1/lx-posY1)*lx;
-
-						var posY2 = Math.floor(card2/lx);
-						var posX2 = (card2/lx-posY2)*lx;	
-						sound_error.play();
-						
-						score1 = score - 500; drawScore();
-						
-						flipCard(posX1, posY1);	flipCard(posX2, posY2);
-						card1 = -1; card2 = -1;
-						canOpen = true;
-					}, 500);
+			if (failed) {
+				drawText(strings.failed, 50, 46, 3, 0, "", strings.font, "center", "middle", colors.darkForeground, true, true);
+			} else {
+				if (records === null) {
+					drawText(strings.loading, 50, 46, 3, 0, "", strings.font, "center", "middle", colors.darkForeground, true, true);
+				} else {
+					for (var i = 0; i < records.length; i++) {
+						drawText((i + 1) + ". " + records[i].name, 30, 28 + i * 4, 3, 29, "", strings.font, "left", "middle", colors.darkForeground, true, true);
+						drawText(records[i].points, 70, 28 + i * 4, 3, 10, "", strings.font, "right", "middle", colors.darkForeground, true, true);
+					}
 				}
-			}else{if(points!=(lx*ly)/2){canOpen = true;}}
-		}
+			}
+
+		};
+
+		this.handleEvt = function(evt) {
+			backButton.handleEvt(evt);
+			moreButton.handleEvt(evt);
+		};
+
+		this.draw(true);
+
 	}
 
-}
+	function IntroScene(t, level, points, gd, bd, tl) {
 
-function initLevel(){
-	canOpen = false;
-	card1 = -1; card2 = -1;
-	levelInitialized = false;
-	points = 0;
-	
-	cards = [];
+		theme = themes[t];
 
-	if(level<11){
-		lx = levels[level-1].x; ly = levels[level-1].y;
-		ltime = levels[level-1].time; ltime1 = levels[level-1].time1;}
-	else {
-		lx = 5; ly = 4;
-		ltime = 3.5-0.25*(level-10); ltime1 = 60-5*(level-10);}
-	
-	requestRedraw();
-	
-	var q = lx * ly;
+		if (!level) level = 0;
+		if (!points) points = 0;
+		if (!gd) gd = 0;
+		if (!bd) bd = 0;
+		if (!tl) tl = 0;
 
-	var cardsD = [];
-	var cardsF = [];
-	var min, max;
-	
-	if(theme==0){min = 0; max = 112;}
-	else if(theme<6){min = (theme-1)*15; max = min+15;}
-	else if(theme==6){min = 75; max = 102;}
-	else {min = 102; max = 112;}
-	
-	for(var c = min; c<max; c++){
-		cardsD.push(c);
-	}
+		var cards = [];
+		var levelInfo = levels.get(level);
+		var numPairs = levelInfo.width * levelInfo.height / 2;
+		
+		cards = getRandomNumbers(numPairs, theme.begin, theme.end);
+		cards = cards.concat(cards);
 
-	max = cardsD.length;
+		shuffleArray(cards);
 
-	for(var c1 = 0; c1<q/2; c1++){
-		var rnd = Math.floor(Math.random() * max);
-		cardsF.push(cardsD[rnd]);
-		cardsF.push(cardsD[rnd]);
-		cardsD.splice(rnd, 1);
-		max--;
-	}
-
-	max = q;
-
-	for(var c2 = 0; c2<q; c2++){
-		var rnd = Math.floor(Math.random() * max);
-		cards.push({card: cardsF[rnd], state: 1, state1: 1, state2: 1, state3: 1});
-		cardsF.splice(rnd, 1);
-		max--;
-	}
-
-	setTimeout(function(){
-		levelInitialized = true;
-		time = ltime1*1000;
-		requestRedraw();
 		setTimeout(function(){
-			drawTime();
-			for(var x = 0; x<lx; x++){
-				for(var y = 0; y<ly; y++){			
-					flipCard(x, y);
-				}
-			}}, ltime*1000);
+			scene = new GameScene(cards, t, level, points, gd, bd, tl);
 		}, 2000);
-}
 
-function drawLoading(){
-	ctx.fillStyle = "rgb(112, 146, 190)"
-	ctx.fillRect(0, 0, width, height);
-	
-	ctx.fillStyle = "white"
-	ctx.font = _y(10)+"px Arial";
-	ctx.textAlign = "center";
+		this.draw = function() {
 
-	ctx.fillText("Carregando...", _x(50)+x, _y(45)+y);
-	
-	ctx.font = _y(4)+"px Arial";
-	ctx.fillText(done.toFixed(2)+"KB/"+total.toFixed(2)+"KB", _x(50)+x, _y(55)+y);
-	
-}
+			drawRect(0, 0, width, height, colors.background, true);		
+			
+			drawText(strings.level + " " + (level + 1), 50, 40, 7, 0, "bold", strings.font, "center", "middle", colors.foreground, true, true);
+			drawText(strings.levelText + levelInfo.levelTime + strings.levelText1, 50, 50, 4, 0,
+				     "", strings.font, "center", "middle", colors.foreground, true, true);
 
-function drawMenu(){
-	ctx.fillStyle = "rgb(73, 46, 184)";
-	ctx.fillRect(0, 0, width, height);
-	
-	ctx.drawImage(image_menu, _x(0)+x, _y(0)+y, _x(100), _y(100));
+		};
 
-	ctx.font = _y(2.2)+"px Arial";
-	ctx.fillStyle = "white";
-	ctx.textBaseline = "middle";
+		this.handleEvt = function(evt) {
+			
+		};
 
-	ctx.textAlign = "left";
-	ctx.fillText("COPYRIGHT © 2017", _x(2), height-_y(6));
-	ctx.fillText("FASTMEMORY por GUILHERME MARCELINO", _x(2), height-_y(3));
-	
-	button_start.draw();
-	button_records.draw();
-}
+		this.draw();
 
-function drawTheme(){
-	ctx.fillStyle = "rgb(73, 46, 184)";
-	ctx.fillRect(0, 0, width, height);
-	
-	ctx.drawImage(image_theme, _x(0)+x, _y(0)+y, _x(100), _y(100));
-	
-	for(var i = 0; i<8; i++){
-		buttons_themes[i].draw();
 	}
-	
-	ctx.font = _y(2.2)+"px Arial";
-	ctx.fillStyle = "white";
-	ctx.textBaseline = "middle";
-	
-	ctx.textAlign = "left";
-	ctx.fillText("COPYRIGHT © 2017", _x(2), height-_y(6));
-	ctx.fillText("FASTMEMORY por GUILHERME MARCELINO", _x(2), height-_y(3));
-	
-	button_menu.draw();
-}
 
-function drawGameover(){
-	ctx.fillStyle = "rgb(73, 46, 184)";
-	ctx.fillRect(0, 0, width, height);
-	
-	ctx.drawImage(image_gameover, _x(0)+x, _y(0)+y, _x(100), _y(100));
-	
-	ctx.font = "Bold "+_y(9)+"px Arial";
-	ctx.fillStyle = "black";
-	ctx.textBaseline = "middle";
-	
-	ctx.textAlign = "center";
-	ctx.fillText(Math.floor(score), _x(50)+x, _y(58)+y);	
-	
-	ctx.font = _y(2.2)+"px Arial";
-	ctx.fillStyle = "white";
-	ctx.textBaseline = "middle";
+	function GameScene(cardsId, theme, level, points, gd, bd, tl) {
 
-	ctx.textAlign = "left";
-	ctx.fillText("COPYRIGHT © 2017", _x(2), height-_y(6));
-	ctx.fillText("FASTMEMORY por GUILHERME MARCELINO", _x(2), height-_y(3));
-	
-	button_menu.draw();	
-}
+		var levelInfo = levels.get(level);
+		var time = levelInfo.levelTime, timeInterval, canFlip = false, started = false, lost = false;
+		var cards = [], flippedCard = null, cardsFlipped = 0;
 
-function drawRecords(){
-	ctx.fillStyle = "rgb(73, 46, 184)";
-	ctx.fillRect(0, 0, width, height);
-	
-	ctx.drawImage(image_records, _x(0)+x, _y(0)+y, _x(100), _y(100));
-	
-	ctx.font = _y(2.6)+"px Arial";
-	ctx.fillStyle = "black";
-	ctx.textBaseline = "middle";
-
-	for(var i = 0; i<10; i++){
-		if(records[i][0]==name){ctx.font = "Bold "+_y(2.6)+"px Arial";}else{ctx.font = _y(2.6)+"px Arial";}
-		ctx.textAlign = "left";
-		ctx.fillText((i+1)+" - "+records[i][0], _x(31)+x, _y(28+4.6*i)+y);
-		ctx.textAlign = "right";
-		ctx.fillText(records[i][1], _x(69)+x, _y(28+4.6*i)+y);
-	}
-	
-	ctx.font = _y(2.2)+"px Arial";
-	ctx.fillStyle = "white";
-
-	ctx.textAlign = "left";
-	ctx.fillText("COPYRIGHT © 2017", _x(2), height-_y(6));
-	ctx.fillText("FASTMEMORY por GUILHERME MARCELINO", _x(2), height-_y(3));
-	
-	button_menu.draw();	
-}
-
-function drawGame(){
-
-	if(levelInitialized){
-		ctx.fillStyle = "rgb(73, 46, 184)";
-		ctx.fillRect(0, 0, width, height);
-	
-		ctx.drawImage(image_playing, _x(0)+x, _y(0)+y, _x(100), _y(100));
-	
-		var x1 = (100-16.25*lx)/2;
-		var y1 = (102-18.75*ly)/2;
-
-		var id = 0;
+		var box = new Box(strings.level + " " + (level + 1), points, time, 3, 1, 94, 98);
 		
-		for(var cY = 0; cY<ly; cY++){
-			for(var cX = 0; cX<lx; cX++){
-				if(cards[id].state<0){
-					ctx.drawImage(image_card, _x(x1+cX*16.25+7.5*(cards[id].state+1))+x, _y(y1+cY*20)+y, _x(-15*cards[id].state), _y(18.75));
-				}else{
-					if(cards[id].card<75){i = 0; cy = Math.floor(cards[id].card/15); cx = cards[id].card-cy*15;}
-					else if(cards[id].card<102){i = 1; cy = 0; cx = cards[id].card-75;}
-					else {i = 2; cy = 0; cx = cards[id].card-102;}
-					
-					ctx.drawImage(image_cardOpen, _x(x1+cX*16.25+7.5*(1-cards[id].state)+7.5*(1-cards[id].state2))+x, _y(y1+cY*20+9.375*(1-cards[id].state2))+y, _x(15*cards[id].state*cards[id].state2), _y(18.75*cards[id].state2));
-					ctx.drawImage(image_cards[i], 200*cx, 250*cy, 200, 250, _x(x1+cX*16.25+7.5*(1-cards[id].state)+7.5*(1-cards[id].state2))+x, _y(y1+cY*20+9.375*(1-cards[id].state2))+y, _x(15*cards[id].state*cards[id].state2), _y(18.75*cards[id].state2));
-				}
-				id++;
+		var ox = (5 - levelInfo.width) / 2 * 17 + 10;
+		var oy = (4 - levelInfo.height) / 2 * 20 + 13.5;
+
+		cardsId.forEach(function(c, i){
+			var x = i % levelInfo.width;
+			var y = Math.floor(i / levelInfo.width);
+
+			var card = new Card(c, ox + 16 * x + 0.25, oy + 19.7 * y + 0.25, 15.5, 19.2);
+			card.onClick = onClick;
+			card.onFlip = onFlip;
+			card.onHide = onHide;
+
+			cards.push(card);
+		});
+
+		function onClick(card) {
+			if (!lost && canFlip && !card.isHidden() && card != flippedCard) {
+				if (assets.sounds.flip.currentTime) assets.sounds.flip.currentTime = 0;
+				assets.sounds.flip.play();
+
+				card.flip();
+				canFlip = false;
 			}
 		}
-		
-		ctx.font = _y(4)+"px Arial";
-		ctx.fillStyle = "white";
-		ctx.textBaseline = "middle";
-		
-		ctx.textAlign = "left";
-		ctx.fillText(Math.floor(score), _x(11)+x, _y(6.5)+y);
-		ctx.textAlign = "right";
-		ctx.fillText(convertToMin(time), _x(89)+x, _y(6.5)+y);
-		ctx.font = "Bold "+_y(4)+"px Arial";
-		ctx.textBaseline = "middle";
-		ctx.textAlign = "center";
-		ctx.fillText("LEVEL "+level, _x(50)+x, _y(6.5)+y);
-	}else{
-		ctx.fillStyle = "rgb(112, 146, 190)";
-		ctx.fillRect(0, 0, width, height);
 
-		ctx.fillStyle = "white"
-		ctx.font = "Bold "+_y(7)+"px Arial";
-		ctx.textAlign = "center";
-		ctx.fillText("LEVEL "+level, _x(50)+x, _y(45)+y);
-		ctx.font = _y(4)+"px Arial";
-		ctx.fillText("Encontre todos os pares em "+ltime1+" segundos!", _x(50)+x, _y(55)+y);
-	}
+		function onHide(card) {
+			canFlip = true;
+			if (++cardsFlipped == levelInfo.width * levelInfo.height) {
+				clearInterval(timeInterval);
+				assets.sounds.clock.pause();
 
-}
-
-function redraw(){
-	switch(state){
-		case 0:
-			drawLoading();
-			break;
-		case 1:
-			drawMenu();
-			break;
-		case 2:
-			drawTheme();
-			break;
-		case 3:
-			drawRecords();
-			break;
-		case 5:
-			drawGame();
-			break;
-		case 6:
-			drawGameover();
-			break;
-	}
-	needRedraw = true;
-}
-
-function requestRedraw(){
-	if(needRedraw){needRedraw = false; redraw();}
-}
-
-function resize(){	
-	width = document.body.clientWidth;
-	height = document.body.clientHeight;
-	
-	if(width>height){
-		width1 = height; x = (width-height)/2
-	}else{
-		width1 = width;	x = 0;}
-		
-	if(width<height){
-		height1 = width; y = (height-width)/2
-	}else{
-		height1 = height; y = 0;}
-		
-	canvas.width = document.body.clientWidth;
-	canvas.height = document.body.clientHeight;
-	
-	requestRedraw();
-}
-
-function mousedown(event){
-	event.preventDefault();
-	
-	var mouseX = event.x | event.pageX;
-	var mouseY = event.y | event.pageY;
-
-	switch(state){
-		case 1:
-			button_start.verifyClick(mouseX, mouseY, 0);
-			button_records.verifyClick(mouseX, mouseY, 0);
-			break;
-		case 2:
-			for(var i = 0; i<8; i++){
-				buttons_themes[i].verifyClick(mouseX, mouseY, 0);
+				timeToPoints();
 			}
-		case 3:
-		case 6:
-		case 4:
-			button_menu.verifyClick(mouseX, mouseY, 0);
-			break;
-		case 5:
-			if(canOpen && levelInitialized){
-				var x1 = (100-16.25*lx)/2;
-				var y1 = (102-18.75*ly)/2;
-				if(mouseX>=_x(x1)+x && mouseY>=_y(y1) && mouseX<=_x(x1+16.25*lx)+x && mouseY<=_y(y1+20*ly)+y){
-					cardX = Math.floor((mouseX-_x(x1)-x-0.625)/_x(16.25));
-					cardY = Math.floor((mouseY-_y(y1)-y-0.625)/_y(20));
+		}
+
+		function onFlip(card) {
+			canFlip = true;
+			if (!started) {
+				timeInterval = setInterval(tick, 1000);
+				started = true;
+				return;
+			}
+			if (card.isOpen()) {
+				if (!flippedCard) {
+					flippedCard = card;
+				} else {
+					canFlip = false;
+					if (card.getId() == flippedCard.getId()) {
+						setTimeout(function(){
+							addPoints(1000);
+							gd++;
+							assets.sounds.correct.play();
+							card.hide(); 
+							flippedCard.hide();
+							flippedCard = null;
+						}, 500);
+					} else {
+						setTimeout(function(){
+							if (points >= 500) {
+								addPoints(-500);
+								bd++;
+							}
+							assets.sounds.wrong.play();
+							card.flip(); 
+							flippedCard.flip();
+							flippedCard = null;
+						}, 500);
+					}
+					
 				}
 			}
-			break;
-	}
-}
+		}
 
-function mouseup(event){
-	event.preventDefault();
-	
-	var mouseX = event.x | event.pageX;
-	var mouseY = event.y | event.pageY;
-	
-	switch(state){
-		case 1:
-			button_start.verifyClick(mouseX, mouseY, 1);
-			button_records.verifyClick(mouseX, mouseY, 1);
-			break;
-		case 2:
-			for(var i = 0; i<8; i++){
-				buttons_themes[i].verifyClick(mouseX, mouseY, 1);
+		function addPoints(amount) {
+			var i = 0, ratio = Math.floor(amount / 10);
+
+			function add() {
+				box.setPoints(points + ratio * i);
+				if (++i == 10) {
+					points += amount;
+					box.setPoints(points);
+				} else {
+					setTimeout(add, 20);
+				}
 			}
-		case 3:
-		case 6:
-		case 4:
-			button_menu.verifyClick(mouseX, mouseY, 1);
-			break;
-		case 5:
-			if(canOpen && levelInitialized){
-				var x1 = (100-16.25*lx)/2;
-				var y1 = (102-18.75*ly)/2;
-				if(mouseX>=_x(x1)+x && mouseY>=_y(y1) && mouseX<=_x(x1+16.25*lx)+x && mouseY<=_y(y1+20*ly)+y){
-					var cardX1 = Math.floor((mouseX-_x(x1)-x-0.625)/_x(16.25));
-					var cardY1 = Math.floor((mouseY-_y(y1)-y-0.625)/_y(20));
 
-					if(cardX == cardX1 && cardY == cardY1 && cardX>=0 && cardX<lx  && cardY>=0 && cardY<ly){
-						var id = cardY*lx+cardX;
-						if(id!=card1 && cards[id].state2==1){
-							if(card1==-1){card1 = id;}
-								else{card2 = id;}
-							flipCard(cardX, cardY);}
-						}
-			}}
-			break;
+			add();
+		}
+
+		function nextLevel() {
+			scene = new IntroScene(theme, level + 1, points, gd, bd, tl);
+		}
+
+		function timeToPoints() {
+			function add() {
+				if (--time < 0) {
+					setTimeout(nextLevel, 500);
+				} else {
+					box.setValues(points += 100, time);
+					setTimeout(add, 50);
+				}
+			}
+			tl += time;
+			add();
+		}
+
+		function tick() {
+			time--;
+			
+			if (time == 9) {
+				if (assets.sounds.clock.currentTime) assets.sounds.clock.currentTime = 0;
+				assets.sounds.clock.play();
+			} else if (time < 0) {
+				assets.sounds.lost.play();
+				clearInterval(timeInterval);
+				lost = true;
+
+				setTimeout(function(){scene = new GameOverScene(theme, level, points, gd, bd, tl);}, 1000);
+				return;
+			}
+
+			box.setTime(time);
+		}
+
+		setTimeout(function() {
+			for (var i = 0; i < cards.length; i++) {
+				cards[i].flip();
+			}
+			assets.sounds.flip.play();
+
+		}, levelInfo.openTime * 1000);
+
+		this.draw = function() {
+
+			drawRect(0, 0, width, height, colors.darkBackground, true);		
+			
+			box.draw();
+
+			for (var i = 0; i < cards.length; i++) {
+				cards[i].draw();
+			}
+			
+		};
+
+		this.handleEvt = function(evt) {
+			for (var i = 0; i < cards.length; i++) {
+				cards[i].handleEvt(evt);
+			}
+		};
+
+		this.draw();
+
 	}
-}	
 
-function touch(evt) {
-  evt.preventDefault();
-  if (evt.touches.length > 1 || (evt.type == "touchend" && evt.touches.length > 0))
-    return;
+	function GameOverScene(theme, level, points, gd, bd, tl) {
 
-  var newEvt = document.createEvent("MouseEvents");
-  var type = null;
-  var touch = null;
-  switch (evt.type) {
-    case "touchstart":    type = "mousedown";    touch = evt.changedTouches[0];break;
-    case "touchmove":        type = "mousemove";    touch = evt.changedTouches[0];break;
-    case "touchend":        type = "mouseup";    touch = evt.changedTouches[0];break;
-  }
-  newEvt.initMouseEvent(type, true, true, window, 0,
-    touch.screenX, touch.screenY, touch.clientX, touch.clientY,
-    evt.ctrlKey, evt.altKey, evt.shirtKey, evt.metaKey, 0, null);
-  canvas.dispatchEvent(newEvt);
-}
+		var circle = new Circle(0, 0, 50);
+		var square = new Square(19, 43, 63, 22, 5);
+		var addButton = new Button(30, 69, 40, 6, strings.addRecord, colors.darkForeground, colors.button3, colors.button3Over, colors.button3Click);
+		var backButton = new Button(40, 78, 20, 6, strings.back, colors.foreground, colors.button2, colors.button2Over, colors.button2Click);
+
+		console.log(gd,bd,tl);
+
+		addButton.onClick = function() {
+			var name = prompt(strings.namePrompt, strings.nameOrNickname);
+			
+			if (name && name != strings.nameOrNickname) {
+				server.saveRecord(name, theme, level, points, gd, bd, tl);
+				scene = new RecordsScene();
+			}
+		};
+
+		backButton.onClick = function() {
+			scene = new MenuScene();
+		};
+
+		this.draw = function() {
+			drawRect(0, 0, width, height, colors.darkBackground, true);
+
+			circle.draw();
+			square.draw();
+			addButton.draw();
+			backButton.draw();
+
+			drawImage(assets.images.title, null, null, null, null, 10, 15, 75, null, false, true);
+			drawImage(assets.images.texts, 310, 120, null, 60, 38, 33, 24, null, false, true);
+			drawImage(assets.images.texts, 0, 120, 310, 60, 32, 45, 38, null, false, true);
+
+			drawText(points, 50, 58, 7, null, "bold", strings.font, "center", "middle", colors.darkForeground, true, true);
+		};
+
+		this.handleEvt = function(evt) {
+			addButton.handleEvt(evt);
+			backButton.handleEvt(evt);
+		};
+
+		this.draw();
+
+	}
+
+	// Assets loader (images and sounds)
+
+	function Loader(images, sounds, onProgress, onError) {
+
+		var loaded = 0;
+		var total = 0;
+		var failed = false;
+
+		this.images = images;
+		this.sounds = sounds;
+
+		for (var image in this.images) {
+			let img = new Image();
+			img.src = this.images[image];
+			img.onload = function() {
+				loaded++;
+				if (!failed && onProgress) onProgress(loaded / total);
+			};
+			img.onerror = function() {
+				failed = true;
+				if (!failed && onError) onError();
+			}
+			this.images[image] = img;
+			total++;
+		}
+
+		for (var sound in this.sounds) {
+			let audio = new Audio(this.sounds[sound]);
+			audio.oncanplaythrough = function() {
+				this.oncanplaythrough = null;
+				loaded++;
+				if (!failed && onProgress) onProgress(loaded / total);
+			};
+			audio.onerror = function() {
+				failed = true;
+				if (!failed && onError) onError();
+			};
+			this.sounds[sound] = audio;
+			total++;
+		}
+
+	}
+
+	var server = new (function() {
+		
+		function createResult(l, gd, bd, tl, pt) {
+			return (getHex(l, 2) + getHex(gd, 2) + getHex(bd, 2) + getHex(tl, 3) + getHex(pt, 5)).toUpperCase();
+		}
+
+		this.getRecords = function(onSuccess, onError) {
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', 'server.php?action=get&amount=10', true);
+
+			xhr.onload = function() {
+				try {
+					onSuccess(JSON.parse(xhr.responseText));
+				} catch (evt) {
+					if (onError) onError();
+				}
+			};
+
+			xhr.onerror = function() {
+				if (onError) onError();
+			};
+
+			xhr.send();
+
+		};
+
+		this.saveRecord = function(name, theme, level, points, gd, bd, tl) {
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', 'server.php?action=save', false);
+
+			xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+			xhr.send("name=" + name + "&theme=" + theme + "&record=" + createResult(level, gd, bd, tl, points));
+
+		};
+
+	})();
+
+	// Methods
+
+	function resize() {
+		canvas.width = width = document.body.clientWidth;
+		canvas.height = height = document.body.clientHeight;
+
+		dimension = (width > height) ? height : width;
+
+		x = (width - dimension) / 2;
+		y = (height - dimension) / 2;
+
+		scene.draw();
+	}
+
+	function handleMouseEvt(evt) {
+		scene.handleEvt(evt);
+	}
+
+	function handleTouchEvt(evt) {
+
+	}
+
+	function loadAssets() {
+		scene = new LoadingScene();
+
+		var images = {cards10: "images/cards10.png",
+					  cards15: "images/cards15.png",
+					  cards27: "images/cards27.png",
+					  closedCard: "images/closedCard.png",
+					  openCard: "images/openCard.png",
+					  title: "images/title.png",
+					  texts: "images/texts.png",	
+					  circle: "images/circle.png",
+					  square: "images/square.png",
+					  box: "images/box.png"};
+
+		var sounds = {welcome: "sounds/welcome.mp3",
+				      click: "sounds/click.mp3",
+					  flip: "sounds/flip.mp3",
+					  correct: "sounds/correct.mp3",
+					  wrong: "sounds/wrong.mp3",
+					  clock: "sounds/clock.mp3",
+					  lost: "sounds/lost.mp3"};
+
+		function onProgress(per) {
+			scene.update(per);
+			if (per == 1) {
+				scene = new MenuScene();
+				assets.sounds.welcome.play();
+			}
+		}
+
+		function onError() {
+			scene.update(false);
+		}
+
+		assets = new Loader(images, sounds, onProgress, onError);
+	}
+
+	function setup() {
+		canvas = document.getElementById("game");
+		ctx = canvas.getContext("2d");
+
+		window.addEventListener("resize", resize);
+		window.addEventListener("focus", resize);
+		window.addEventListener("contextmenu", function(){return false;});
+
+		canvas.addEventListener("mousedown", handleMouseEvt);
+		canvas.addEventListener("mouseup", handleMouseEvt);
+		canvas.addEventListener("mousemove", handleMouseEvt);
+		canvas.addEventListener("mouseleave", handleMouseEvt);
+
+		canvas.addEventListener("touchstart", handleTouchEvt);
+		canvas.addEventListener("touchend", handleTouchEvt);
+		canvas.addEventListener("touchcancel", handleTouchEvt);
+		canvas.addEventListener("touchmove", handleTouchEvt);
+
+		loadAssets();
+
+		resize();
+	}
+
+	setup();
+
+})();
