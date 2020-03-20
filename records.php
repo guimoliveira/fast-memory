@@ -4,6 +4,35 @@
 
     require("connect.php");
     
+    $lang = $_GET['lang'];
+
+    $langs = [];
+
+    $langs["pt"] = ["title" => "Fast Memory - Recordes",
+                    "name" => "Nome/Apelido",
+                    "score" => "Pontuação",
+                    "level" => "Level",
+                    "theme" => "Tema",
+                    "date" => "Data"];      
+
+    $langs["en"] = ["title" => "Fast Memory - Records",
+                    "name" => "Name/Nickname",
+                    "score" => "Score",
+                    "level" => "Level",
+                    "theme" => "Theme",
+                    "date" => "Date"];
+
+    $langs["es"] = ["title" => "Fast Memory - Récords",
+                    "name" => "Nombre/Apodo",
+                    "score" => "Pontuación",
+                    "level" => "Level",
+                    "theme" => "Tema",
+                    "date" => "Data"];
+
+    if (!isset($langs[$lang])) header("Location: ?lang=en");
+
+    $strings = $langs[$lang];
+
     function fail() {
 		global $db;
 
@@ -19,12 +48,12 @@
 
 ?>
 
-<html lang="pt">
+<html lang="<?php echo $lang; ?>">
 
 	<head>
 		<meta charset="utf-8" />
 
-		<title>Fast Memory - Records</title>
+		<title><?php echo $strings["title"]; ?></title>
 
 		<style>
 			body {
@@ -66,21 +95,24 @@
             <table>
                 <tr style="background: #66eb65; border: 0; color: white;">
                     <td>#</td>
-                    <td>Nome/Apelido</td>
-                    <td>Pontuação</td>
-                    <td>Tema</td>
-                    <td>Data</td>
+                    <td><?php echo $strings["name"]; ?></td>
+                    <td><?php echo $strings["score"]; ?></td>
+                    <td><?php echo $strings["level"]; ?></td>
+                    <td><?php echo $strings["theme"]; ?></td>
+                    <td><?php echo $strings["date"]; ?></td>
                 </tr>
 
 <?php
 
     $i = 0;
+    $format = $lang == "en" ? "m/d/Y" : "d/m/Y";
 
     while ($row = $data->fetch_assoc()) {
         $i++;
-        $date = (new DateTime($row['date']))->format("d/m/Y");
+        $date = (new DateTime($row['date']))->format($format);
         $theme = $themes[$row['theme']];
-        echo "<tr><td>$i</td><td>$row[name]</td><td>$row[points]</td><td>$theme</td><td>$date</td></tr>";
+        $level = $row['level'] + 1;
+        echo "<tr><td>$i</td><td>$row[name]</td><td>$row[points]</td><td>$level</td><td>$theme</td><td>$date</td></tr>";
     }
 
     $db->close();

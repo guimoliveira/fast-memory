@@ -25,31 +25,90 @@ new (function() {
 		button3Click: "rgb(206, 159, 0)"
 	};
 
-	var strings = {
-		font: "Arial",
-		play: "Jogar",
-		records: "Records",
-		back: "Voltar",
-		addRecord: "Adicionar aos records",
-		level: "LEVEL",
-		levelText: "Encontre todos os pares em ",
-		levelText1: " segundos.",
-		namePrompt: "Como você deseja ser conhecido?",
-		nameOrNickname: "Nome ou apelido",
-		loading: "Carregando...",
-		failed: "Algo deu errado. 😔",
-		more: "Mais classificações"
-	};
+	var font = "Arial, Sans Serif";
+
+	var langs = {
+		pt: {
+			play: "Jogar",
+			records: "Recordes",
+			back: "Voltar",
+			addRecord: "Adicionar aos recordes",
+			level: "LEVEL",
+			levelText: "Encontre todos os pares em ",
+			levelText1: " segundos.",
+			namePrompt: "Como você deseja ser conhecido?",
+			nameOrNickname: "Nome ou apelido",
+			loading: "Carregando...",
+			failed: "Algo deu errado. 😔",
+			more: "Lista completa",
+			all: "Todos",
+			transport: "Transporte",
+			fruits: "Frutas",
+			animals: "Animais",
+			objects: "Objetos",
+			food: "Comidas",
+			letters: "Letras",
+			numbers: "Números"
+		},
+
+		en: {
+			play: "Play",
+			records: "Records",
+			back: "Back",
+			addRecord: "Add to records",
+			level: "LEVEL",
+			levelText: "Find all pairs in ",
+			levelText1: " seconds.",
+			namePrompt: "How do you want to be known?",
+			nameOrNickname: "Name or nickname",
+			loading: "Loading...",
+			failed: "Something went wrong. 😔",
+			more: "Full list",
+			all: "All",
+			transport: "Transport",
+			fruits: "Fruits",
+			animals: "Animals",
+			objects: "Objects",
+			food: "Food",
+			letters: "Letters",
+			numbers: "Numbers"
+		},
+
+		es: {
+			play: "Jugar",
+			records: "Récords",
+			back: "Volver",
+			addRecord: "Agregar a los récords",
+			level: "LEVEL",
+			levelText: "Encuentre todos los pares en ",
+			levelText1: " segundos.",
+			namePrompt: "¿Cómo quieres ser conocido?",
+			nameOrNickname: "Nombre o apodo",
+			loading: "Cargando...",
+			failed: "Algo salió mal. 😔",
+			more: "Lista completa",
+			all: "Todos",
+			transport: "Transporte",
+			fruits: "Frutas",
+			animals: "Animales",
+			objects: "Objetos",
+			food: "Comidas",
+			letters: "Letras",
+			numbers: "Numeros"
+		}
+	}
+
+	var strings = langs[lang];
 
 	var themes = [
-		{name: "Todos",      begin: 0,   end: 112},
-		{name: "Transporte", begin: 0,   end: 15},
-		{name: "Frutas",     begin: 15,  end: 30},
-		{name: "Animais",    begin: 30,  end: 45},
-		{name: "Objetos",    begin: 45,  end: 60},
-		{name: "Comidas",    begin: 60,  end: 75},
-		{name: "Letras",     begin: 75,  end: 102},
-		{name: "Números",    begin: 102, end: 112}
+		{name: strings.all,        begin: 0,   end: 112},
+		{name: strings.transport,  begin: 0,   end: 15},
+		{name: strings.fruits,     begin: 15,  end: 30},
+		{name: strings.animals,    begin: 30,  end: 45},
+		{name: strings.objects,    begin: 45,  end: 60},
+		{name: strings.food,       begin: 60,  end: 75},
+		{name: strings.letters,    begin: 75,  end: 102},
+		{name: strings.numbers,    begin: 102, end: 112}
 	];
 
 	var levels = new (function(){
@@ -122,7 +181,7 @@ new (function() {
 		}
 	}
 
-	function drawText(text, _x, _y, size, maxWidth, style, font, align, baseline, color, fill, relative) {
+	function drawText(text, _x, _y, size, maxWidth, style, align, baseline, color, fill, relative) {
 		if (relative) {
 			_x = x + _(_x); _y = y + _(_y); 
 			size = _(size);
@@ -223,7 +282,7 @@ new (function() {
 
 			drawRect(_x, _y, width, height, style, true, true);
 			drawText(text, _x + width / 2, _y + height / 2, height / 2, width, 
-				    "", strings.font, "center", "middle", foreground, true, true);
+				    "", "center", "middle", foreground, true, true);
 		};
 
 		function isIn(__x, __y) {
@@ -518,9 +577,9 @@ new (function() {
 			drawImage(assets.images.box, 100, 0, 20, 100, _x + 10, _y, width - 20, 12.5, false, true);
 			drawImage(assets.images.box, 133, 0, 80, 100, _x + width - 10, _y, 10, 12.5, false, true);
 
-			drawText(title, _x + width / 2, _y + 5.5, 4, width / 2, "bold", strings.font, "center", "middle",  colors.foreground, true, true);
-			drawText(points, _x + 11, _y + 5.5, 4, width / 4, "", strings.font, "left", "middle",  colors.foreground, true, true);
-			drawText(time, _x + width - 11, _y + 5.5, 4, width / 4, "", strings.font, "right", "middle",  colors.foreground, true, true);
+			drawText(title, _x + width / 2, _y + 5.5, 4, width / 2, "bold", "center", "middle",  colors.foreground, true, true);
+			drawText(points, _x + 11, _y + 5.5, 4, width / 4, "", "left", "middle",  colors.foreground, true, true);
+			drawText(time, _x + width - 11, _y + 5.5, 4, width / 4, "", "right", "middle",  colors.foreground, true, true);
 		}
 
 		this.draw = function() {
@@ -548,7 +607,7 @@ new (function() {
 
 			drawLine(30, 50, 70, 50, 3, "round", null, colors.darkBackground, true);
 			drawLine(30, 50, 30 + done * 40, 50, 3, "round", null, colors.loadingBar, true);
-			drawText(text, 50, 50, 2, 0, "", strings.font, "center", "middle", colors.foreground, true, true);
+			drawText(text, 50, 50, 2, 0, "", "center", "middle", colors.foreground, true, true);
 		}
 
 		this.update = function(per) {
@@ -672,7 +731,7 @@ new (function() {
 		};
 
 		moreButton.onClick = function() {
-			window.open("records.php");
+			window.open("records.php?lang=" + lang);
 		}
 
 		var records = null;
@@ -694,14 +753,14 @@ new (function() {
 			drawImage(assets.images.texts, 310, 60, null, 60, 38, 14, 24, null, false, true);
 
 			if (failed) {
-				drawText(strings.failed, 50, 46, 3, 0, "", strings.font, "center", "middle", colors.darkForeground, true, true);
+				drawText(strings.failed, 50, 46, 3, 0, "", "center", "middle", colors.darkForeground, true, true);
 			} else {
 				if (records === null) {
-					drawText(strings.loading, 50, 46, 3, 0, "", strings.font, "center", "middle", colors.darkForeground, true, true);
+					drawText(strings.loading, 50, 46, 3, 0, "", "center", "middle", colors.darkForeground, true, true);
 				} else {
 					for (var i = 0; i < records.length; i++) {
-						drawText((i + 1) + ". " + records[i].name, 30, 28 + i * 4, 3, 29, "", strings.font, "left", "middle", colors.darkForeground, true, true);
-						drawText(records[i].points, 70, 28 + i * 4, 3, 10, "", strings.font, "right", "middle", colors.darkForeground, true, true);
+						drawText((i + 1) + ". " + records[i].name, 30, 28 + i * 4, 3, 29, "", "left", "middle", colors.darkForeground, true, true);
+						drawText(records[i].points, 70, 28 + i * 4, 3, 10, "", "right", "middle", colors.darkForeground, true, true);
 					}
 				}
 			}
@@ -744,9 +803,9 @@ new (function() {
 
 			drawRect(0, 0, width, height, colors.background, true);		
 			
-			drawText(strings.level + " " + (level + 1), 50, 40, 7, 0, "bold", strings.font, "center", "middle", colors.foreground, true, true);
+			drawText(strings.level + " " + (level + 1), 50, 40, 7, 0, "bold", "center", "middle", colors.foreground, true, true);
 			drawText(strings.levelText + levelInfo.levelTime + strings.levelText1, 50, 50, 4, 0,
-				     "", strings.font, "center", "middle", colors.foreground, true, true);
+				     "", "center", "middle", colors.foreground, true, true);
 
 		};
 
@@ -802,7 +861,14 @@ new (function() {
 		}
 
 		function onFlip(card) {
+
+			if (lost) {
+				scene = new GameOverScene(theme, level, points, gd, bd, tl);
+				return;
+			}
+
 			canFlip = true;
+
 			if (!started) {
 				timeInterval = setInterval(tick, 1000);
 				started = true;
@@ -883,7 +949,9 @@ new (function() {
 				clearInterval(timeInterval);
 				lost = true;
 
-				setTimeout(function(){scene = new GameOverScene(theme, level, points, gd, bd, tl);}, 1000);
+				if (canFlip) {
+					scene = new GameOverScene(theme, level, points, gd, bd, tl);
+				}
 				return;
 			}
 
@@ -954,7 +1022,7 @@ new (function() {
 			drawImage(assets.images.texts, 310, 120, null, 60, 38, 33, 24, null, false, true);
 			drawImage(assets.images.texts, 0, 120, 310, 60, 32, 45, 38, null, false, true);
 
-			drawText(points, 50, 58, 7, null, "bold", strings.font, "center", "middle", colors.darkForeground, true, true);
+			drawText(points, 50, 58, 7, null, "bold", "center", "middle", colors.darkForeground, true, true);
 		};
 
 		this.handleEvt = function(evt) {
@@ -970,6 +1038,8 @@ new (function() {
 
 	function Loader(images, sounds, onProgress, onError) {
 
+        var self = this;
+
 		var loaded = 0;
 		var total = 0;
 		var failed = false;
@@ -979,30 +1049,46 @@ new (function() {
 
 		for (var image in this.images) {
 			let img = new Image();
-			img.src = this.images[image];
 			img.onload = function() {
 				loaded++;
 				if (!failed && onProgress) onProgress(loaded / total);
 			};
 			img.onerror = function() {
+			    if (!failed && onError) {
+			        self.images = null; 
+			        if (onError()) {
+			            total--;
+			            if (onProgress) onProgress(loaded / total);
+			            return;
+			        }
+			    }
 				failed = true;
-				if (!failed && onError) onError();
-			}
+			};
+			img.src = this.images[image];
 			this.images[image] = img;
 			total++;
 		}
 
 		for (var sound in this.sounds) {
-			let audio = new Audio(this.sounds[sound]);
+			let audio = new Audio();
 			audio.oncanplaythrough = function() {
 				this.oncanplaythrough = null;
 				loaded++;
 				if (!failed && onProgress) onProgress(loaded / total);
 			};
 			audio.onerror = function() {
+			    if (!failed && onError) {
+			        self.sounds = null; 
+			        if (onError()) {
+			            total--;
+			            if (onProgress) onProgress(loaded / total);
+			            return;
+			        }
+			    }
 				failed = true;
-				if (!failed && onError) onError();
 			};
+			audio.src = this.sounds[sound];
+			audio.load();
 			this.sounds[sound] = audio;
 			total++;
 		}
@@ -1075,12 +1161,12 @@ new (function() {
 		scene = new LoadingScene();
 
 		var images = {cards10: "images/cards10.png",
-					  cards15: "images/cards15.png",
+					  cards15: "images/cards15" + lang + ".png",
 					  cards27: "images/cards27.png",
 					  closedCard: "images/closedCard.png",
 					  openCard: "images/openCard.png",
 					  title: "images/title.png",
-					  texts: "images/texts.png",	
+					  texts: "images/texts_" + lang + ".png",	
 					  circle: "images/circle.png",
 					  square: "images/square.png",
 					  box: "images/box.png"};
