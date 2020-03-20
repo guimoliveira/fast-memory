@@ -4,7 +4,7 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 		<meta charset="utf-8" />
 
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		<meta name="viewport" content="width=800, user-scalable=no">
 		<meta name="keywords" content="fastmemory, fast memory, memory, game, canvas, jogo da memória, memória, memoria, jogo da memoria, online, jogo, html5, autism, austismo, autista">
 		<meta name="description" content="Teste sua habilidade em decorar. Jogo da Memória online com records e uma grande diversidade de cartas.">
 		<meta name="author" content="Guilherme Marcelino">
