@@ -26,7 +26,7 @@ new (function() {
 	};
 
 	var strings = {
-		font: "Arial",
+		font: "Arial, Sans Serif",
 		play: "Jogar",
 		records: "Records",
 		back: "Voltar",
@@ -34,11 +34,11 @@ new (function() {
 		level: "LEVEL",
 		levelText: "Encontre todos os pares em ",
 		levelText1: " segundos.",
-		namePrompt: "Como você deseja ser conhecido?",
+		namePrompt: "Como vocÃª deseja ser conhecido?",
 		nameOrNickname: "Nome ou apelido",
 		loading: "Carregando...",
-		failed: "Algo deu errado. 😔",
-		more: "Mais classificações"
+		failed: "Algo deu errado. ðŸ˜”",
+		more: "Mais classificaÃ§Ãµes"
 	};
 
 	var themes = [
@@ -49,7 +49,7 @@ new (function() {
 		{name: "Objetos",    begin: 45,  end: 60},
 		{name: "Comidas",    begin: 60,  end: 75},
 		{name: "Letras",     begin: 75,  end: 102},
-		{name: "Números",    begin: 102, end: 112}
+		{name: "NÃºmeros",    begin: 102, end: 112}
 	];
 
 	var levels = new (function(){
@@ -256,7 +256,7 @@ new (function() {
  
 			if (lastState != state) this.draw();
 			if (click && this.onClick) {
-				assets.sounds.click.play();
+				if (assets.sounds) assets.sounds.click.play();
 				this.onClick(this);
 			}
 
@@ -547,7 +547,9 @@ new (function() {
 			var text = done !== false ? (done * 100).toFixed(0) + "%" : strings.failed;
 
 			drawLine(30, 50, 70, 50, 3, "round", null, colors.darkBackground, true);
-			drawLine(30, 50, 30 + done * 40, 50, 3, "round", null, colors.loadingBar, true);
+		
+			if (done > 0) drawLine(30, 50, 30 + done * 40, 50, 3, "round", null, colors.loadingBar, true);
+		
 			drawText(text, 50, 50, 2, 0, "", strings.font, "center", "middle", colors.foreground, true, true);
 		}
 
@@ -783,8 +785,10 @@ new (function() {
 
 		function onClick(card) {
 			if (!lost && canFlip && !card.isHidden() && card != flippedCard) {
-				if (assets.sounds.flip.currentTime) assets.sounds.flip.currentTime = 0;
-				assets.sounds.flip.play();
+			    if (assets.sounds) {
+				    if (assets.sounds.flip.currentTime) assets.sounds.flip.currentTime = 0;
+				    assets.sounds.flip.play();
+			    }
 
 				card.flip();
 				canFlip = false;
@@ -795,14 +799,21 @@ new (function() {
 			canFlip = true;
 			if (++cardsFlipped == levelInfo.width * levelInfo.height) {
 				clearInterval(timeInterval);
-				assets.sounds.clock.pause();
+				if (assets.sounds) assets.sounds.clock.pause();
 
 				timeToPoints();
 			}
 		}
 
 		function onFlip(card) {
+
+			if (lost) {
+				scene = new GameOverScene(theme, level, points, gd, bd, tl);
+				return;
+			}
+
 			canFlip = true;
+
 			if (!started) {
 				timeInterval = setInterval(tick, 1000);
 				started = true;
@@ -817,7 +828,7 @@ new (function() {
 						setTimeout(function(){
 							addPoints(1000);
 							gd++;
-							assets.sounds.correct.play();
+							if (assets.sounds) assets.sounds.correct.play();
 							card.hide(); 
 							flippedCard.hide();
 							flippedCard = null;
@@ -828,7 +839,7 @@ new (function() {
 								addPoints(-500);
 								bd++;
 							}
-							assets.sounds.wrong.play();
+							if (assets.sounds) assets.sounds.wrong.play();
 							card.flip(); 
 							flippedCard.flip();
 							flippedCard = null;
@@ -876,14 +887,18 @@ new (function() {
 			time--;
 			
 			if (time == 9) {
-				if (assets.sounds.clock.currentTime) assets.sounds.clock.currentTime = 0;
-				assets.sounds.clock.play();
+			    if (assets.sounds) {
+				    if (assets.sounds.clock.currentTime) assets.sounds.clock.currentTime = 0;
+				    assets.sounds.clock.play();
+			    }
 			} else if (time < 0) {
-				assets.sounds.lost.play();
+				if (assets.sounds) assets.sounds.lost.play();
 				clearInterval(timeInterval);
 				lost = true;
 
-				setTimeout(function(){scene = new GameOverScene(theme, level, points, gd, bd, tl);}, 1000);
+				if (canFlip) {
+					scene = new GameOverScene(theme, level, points, gd, bd, tl);
+				}
 				return;
 			}
 
@@ -894,7 +909,7 @@ new (function() {
 			for (var i = 0; i < cards.length; i++) {
 				cards[i].flip();
 			}
-			assets.sounds.flip.play();
+			if (assets.sounds) assets.sounds.flip.play();
 
 		}, levelInfo.openTime * 1000);
 
@@ -970,6 +985,8 @@ new (function() {
 
 	function Loader(images, sounds, onProgress, onError) {
 
+        var self = this;
+
 		var loaded = 0;
 		var total = 0;
 		var failed = false;
@@ -979,30 +996,46 @@ new (function() {
 
 		for (var image in this.images) {
 			let img = new Image();
-			img.src = this.images[image];
 			img.onload = function() {
 				loaded++;
 				if (!failed && onProgress) onProgress(loaded / total);
 			};
 			img.onerror = function() {
+			    if (!failed && onError) {
+			        self.images = null; 
+			        if (onError()) {
+			            total--;
+			            if (onProgress) onProgress(loaded / total);
+			            return;
+			        }
+			    }
 				failed = true;
-				if (!failed && onError) onError();
-			}
+			};
+			img.src = this.images[image];
 			this.images[image] = img;
 			total++;
 		}
 
 		for (var sound in this.sounds) {
-			let audio = new Audio(this.sounds[sound]);
+			let audio = new Audio();
 			audio.oncanplaythrough = function() {
 				this.oncanplaythrough = null;
 				loaded++;
 				if (!failed && onProgress) onProgress(loaded / total);
 			};
 			audio.onerror = function() {
+			    if (!failed && onError) {
+			        self.sounds = null; 
+			        if (onError()) {
+			            total--;
+			            if (onProgress) onProgress(loaded / total);
+			            return;
+			        }
+			    }
 				failed = true;
-				if (!failed && onError) onError();
 			};
+			audio.src = this.sounds[sound];
+			audio.load();
 			this.sounds[sound] = audio;
 			total++;
 		}
@@ -1097,12 +1130,14 @@ new (function() {
 			scene.update(per);
 			if (per == 1) {
 				scene = new MenuScene();
-				assets.sounds.welcome.play();
+				if (assets.sounds) assets.sounds.welcome.play();
 			}
 		}
 
 		function onError() {
+		    if (assets.images) return true;
 			scene.update(false);
+			return false;
 		}
 
 		assets = new Loader(images, sounds, onProgress, onError);
