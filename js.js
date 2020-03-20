@@ -36,10 +36,10 @@ new (function() {
 			level: "LEVEL",
 			levelText: "Encontre todos os pares em ",
 			levelText1: " segundos.",
-			namePrompt: "Como você deseja ser conhecido?",
+			namePrompt: "Como vocÃª deseja ser conhecido?",
 			nameOrNickname: "Nome ou apelido",
 			loading: "Carregando...",
-			failed: "Algo deu errado. 😔",
+			failed: "Algo deu errado. ðŸ˜”",
 			more: "Lista completa",
 			all: "Todos",
 			transport: "Transporte",
@@ -48,7 +48,7 @@ new (function() {
 			objects: "Objetos",
 			food: "Comidas",
 			letters: "Letras",
-			numbers: "Números"
+			numbers: "NÃºmeros"
 		},
 
 		en: {
@@ -62,7 +62,7 @@ new (function() {
 			namePrompt: "How do you want to be known?",
 			nameOrNickname: "Name or nickname",
 			loading: "Loading...",
-			failed: "Something went wrong. 😔",
+			failed: "Something went wrong. ðŸ˜”",
 			more: "Full list",
 			all: "All",
 			transport: "Transport",
@@ -76,16 +76,16 @@ new (function() {
 
 		es: {
 			play: "Jugar",
-			records: "Récords",
+			records: "RÃ©cords",
 			back: "Volver",
-			addRecord: "Agregar a los récords",
+			addRecord: "Agregar a los rÃ©cords",
 			level: "LEVEL",
 			levelText: "Encuentre todos los pares en ",
 			levelText1: " segundos.",
-			namePrompt: "¿Cómo quieres ser conocido?",
+			namePrompt: "Â¿CÃ³mo quieres ser conocido?",
 			nameOrNickname: "Nombre o apodo",
 			loading: "Cargando...",
-			failed: "Algo salió mal. 😔",
+			failed: "Algo saliÃ³ mal. ðŸ˜”",
 			more: "Lista completa",
 			all: "Todos",
 			transport: "Transporte",
@@ -867,7 +867,7 @@ new (function() {
 		function onFlip(card) {
 
 			if (lost) {
-				scene = new GameOverScene(theme, level, points, gd, bd, tl);
+				setTimeout(lose, 1000);
 				return;
 			}
 
@@ -928,6 +928,10 @@ new (function() {
 		function nextLevel() {
 			scene = new IntroScene(theme, level + 1, points, gd, bd, tl);
 		}
+		
+		function lose() {
+		    scene = new GameOverScene(theme, level, points, gd, bd, tl);
+		}
 
 		function timeToPoints() {
 			function add() {
@@ -956,7 +960,7 @@ new (function() {
 				lost = true;
 
 				if (canFlip) {
-					scene = new GameOverScene(theme, level, points, gd, bd, tl);
+					setTimeout(lose, 1000);
 				}
 				return;
 			}
