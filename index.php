@@ -47,7 +47,7 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 		<meta charset="utf-8" />
 
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		<meta name="viewport" content="width=800, user-scalable=no">
 		<meta name="keywords" content="fastmemory, fast memory, <?php echo $strings["keywords"]; ?>">
 		<meta name="description" content="<?php echo $strings["description"]; ?>">
 		<meta name="author" content="Guilherme Marcelino">
