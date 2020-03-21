@@ -75,7 +75,7 @@
 			<?php echo $strings["incompatibleBrowser"]; ?>
 		</canvas>
 
-		<a href="http://www.github.com/guimoliveira/fast_memory" style="color: white; position: fixed; top: 10px; right: 10px; text-decoration: none;" target="blank">GitHub Repo</a>
+		<a href="http://www.github.com/guimoliveira/fast-memory" style="color: white; position: fixed; top: 10px; right: 10px; text-decoration: none;" target="blank">GitHub Repo</a>
 
 		<script>var lang = "<?php echo $lang; ?>";</script>
 		<script src="js.js"></script>
