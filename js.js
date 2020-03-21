@@ -36,10 +36,10 @@ new (function() {
 			level: "LEVEL",
 			levelText: "Encontre todos os pares em ",
 			levelText1: " segundos.",
-			namePrompt: "Como vocÃª deseja ser conhecido?",
+			namePrompt: "Como você deseja ser conhecido?",
 			nameOrNickname: "Nome ou apelido",
 			loading: "Carregando...",
-			failed: "Algo deu errado. ðŸ˜”",
+			failed: "Algo deu errado. 😔",
 			more: "Lista completa",
 			all: "Todos",
 			transport: "Transporte",
@@ -48,7 +48,7 @@ new (function() {
 			objects: "Objetos",
 			food: "Comidas",
 			letters: "Letras",
-			numbers: "NÃºmeros"
+			numbers: "Números"
 		},
 
 		en: {
@@ -62,7 +62,7 @@ new (function() {
 			namePrompt: "How do you want to be known?",
 			nameOrNickname: "Name or nickname",
 			loading: "Loading...",
-			failed: "Something went wrong. ðŸ˜”",
+			failed: "Something went wrong. 😔",
 			more: "Full list",
 			all: "All",
 			transport: "Transport",
@@ -76,16 +76,16 @@ new (function() {
 
 		es: {
 			play: "Jugar",
-			records: "RÃ©cords",
+			records: "Récords",
 			back: "Volver",
-			addRecord: "Agregar a los rÃ©cords",
+			addRecord: "Agregar a los récords",
 			level: "LEVEL",
 			levelText: "Encuentre todos los pares en ",
 			levelText1: " segundos.",
-			namePrompt: "Â¿CÃ³mo quieres ser conocido?",
+			namePrompt: "¿Cómo quieres ser conocido?",
 			nameOrNickname: "Nombre o apodo",
 			loading: "Cargando...",
-			failed: "Algo saliÃ³ mal. ðŸ˜”",
+			failed: "Algo salió mal. 😔",
 			more: "Lista completa",
 			all: "Todos",
 			transport: "Transporte",
